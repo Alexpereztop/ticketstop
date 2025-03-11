@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle del Ticket - TicketStop</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-6">
+        <h1 class="text-3xl font-bold text-center text-blue-600">Detalle del Ticket</h1>
+        <div id="ticket-info" class="bg-white p-4 mt-6 rounded shadow"></div>
+        
+        <h2 class="text-xl font-semibold mt-6">Comentarios</h2>
+        <div id="comments-section" class="mt-4"></div>
+        
+        <textarea id="comment-input" class="border p-2 w-full rounded mt-4" placeholder="Añadir un comentario..."></textarea>
+        <button id="submit-comment" class="bg-green-500 text-white px-4 py-2 rounded mt-2">Enviar Comentario</button>
+        
+        <button id="back-btn" class="bg-gray-500 text-white px-4 py-2 rounded mt-6">Volver</button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, collection, addDoc, query, orderBy, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDCU-UPTS_3xOrtARueK53RCF7-09YTxRg",
+            authDomain: "ticketstop-9cbe5.firebaseapp.com",
+            projectId: "ticketstop-9cbe5",
+            storageBucket: "ticketstop-9cbe5.firebasestorage.app",
+            messagingSenderId: "233142470845",
+            appId: "1:233142470845:web:f5486f20dc1f56859ccfd4"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth();
+        const db = getFirestore(app);
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const ticketId = urlParams.get("id");
+
+        async function loadTicket() {
+            if (!ticketId) {
+                alert("ID de ticket no válido");
+                window.location.href = "dashboard.html";
+                return;
+            }
+            
+            const ticketRef = doc(db, "tickets", ticketId);
+            const ticketSnap = await getDoc(ticketRef);
+
+            if (!ticketSnap.exists()) {
+                alert("El ticket no existe");
+                window.location.href = "dashboard.html";
+                return;
+            }
+
+            const ticket = ticketSnap.data();
+            document.getElementById("ticket-info").innerHTML = `
+                <h2 class='text-lg font-bold'>${ticket.category} - ${ticket.priority}</h2>
+                <p class='text-gray-700'>${ticket.description}</p>
+                <p class='text-sm text-gray-500 mt-2'>Estado: <strong>${ticket.status}</strong></p>
+            `;
+
+            loadComments();
+        }
+
+        async function loadComments() {
+            const commentsRef = collection(db, "tickets", ticketId, "comments");
+            const q = query(commentsRef, orderBy("createdAt", "asc"));
+            const querySnapshot = await getDocs(q);
+
+            let commentsHtml = "";
+            querySnapshot.forEach(doc => {
+                const comment = doc.data();
+                commentsHtml += `<div class='bg-gray-200 p-2 rounded mt-2'>
+                    <strong>${comment.userName}</strong>
+                    <p>${comment.message}</p>
+                    <p class='text-sm text-gray-500'>${new Date(comment.createdAt.toDate()).toLocaleString()}</p>
+                </div>`;
+            });
+
+            document.getElementById("comments-section").innerHTML = commentsHtml;
+        }
+
+        document.getElementById("submit-comment").addEventListener("click", async () => {
+            const commentText = document.getElementById("comment-input").value.trim();
+            if (!commentText) {
+                alert("El comentario no puede estar vacío");
+                return;
+            }
+
+            const user = auth.currentUser;
+            if (!user) {
+                alert("Debes estar autenticado para comentar");
+                return;
+            }
+
+            await addDoc(collection(db, "tickets", ticketId, "comments"), {
+                userId: user.uid,
+                userName: user.displayName,
+                message: commentText,
+                createdAt: Timestamp.now()
+            });
+
+            document.getElementById("comment-input").value = "";
+            loadComments();
+        });
+
+        document.getElementById("back-btn").addEventListener("click", () => {
+            window.location.href = "dashboard.html";
+        });
+
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                window.location.href = "index.html";
+            } else {
+                loadTicket();
+            }
+        });
+    </script>
+</body>
+</html>

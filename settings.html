@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración - TicketStop</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-6">
+        <h1 class="text-3xl font-bold text-center text-blue-600">Configuración del Sistema</h1>
+        <div class="mt-6">
+            <label class="block text-gray-700">Máximo de tickets por usuario</label>
+            <input id="max-tickets" type="number" class="border p-2 w-full rounded" placeholder="Ej. 5">
+            
+            <label class="block text-gray-700 mt-4">Correo del administrador principal</label>
+            <input id="admin-email" type="email" class="border p-2 w-full rounded" placeholder="admin@ticketstop.com">
+            
+            <button id="save-settings" class="bg-green-500 text-white px-4 py-2 rounded mt-4 w-full">Guardar Configuración</button>
+            <button id="back-btn" class="bg-gray-500 text-white px-4 py-2 rounded mt-4 w-full">Volver</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDCU-UPTS_3xOrtARueK53RCF7-09YTxRg",
+            authDomain: "ticketstop-9cbe5.firebaseapp.com",
+            projectId: "ticketstop-9cbe5",
+            storageBucket: "ticketstop-9cbe5.firebasestorage.app",
+            messagingSenderId: "233142470845",
+            appId: "1:233142470845:web:f5486f20dc1f56859ccfd4"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth();
+        const db = getFirestore(app);
+        const settingsRef = doc(db, "settings", "config");
+
+        async function loadSettings() {
+            const settingsSnap = await getDoc(settingsRef);
+            if (settingsSnap.exists()) {
+                const settings = settingsSnap.data();
+                document.getElementById("max-tickets").value = settings.maxTicketsPerUser || "";
+                document.getElementById("admin-email").value = settings.defaultAdminEmail || "";
+            }
+        }
+
+        document.getElementById("save-settings").addEventListener("click", async () => {
+            const maxTickets = document.getElementById("max-tickets").value;
+            const adminEmail = document.getElementById("admin-email").value;
+
+            if (!maxTickets || !adminEmail) {
+                alert("Todos los campos son obligatorios");
+                return;
+            }
+
+            await setDoc(settingsRef, {
+                maxTicketsPerUser: parseInt(maxTickets),
+                defaultAdminEmail: adminEmail
+            });
+
+            alert("Configuración guardada exitosamente.");
+        });
+
+        document.getElementById("back-btn").addEventListener("click", () => {
+            window.location.href = "admin_dashboard.html";
+        });
+
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                window.location.href = "index.html";
+            } else {
+                loadSettings();
+            }
+        });
+    </script>
+</body>
+</html>

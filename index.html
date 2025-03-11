@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bienvenido a TicketStop</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 h-screen flex flex-col justify-center items-center">
+    <h1 class="text-4xl font-bold text-blue-600 mb-4">TicketStop - Sistema de Soporte</h1>
+    <p class="text-lg text-gray-600 mb-6 text-center">Gestiona tus tickets de soporte de manera eficiente y rápida.</p>
+
+    <div class="bg-white p-6 rounded shadow-md w-96">
+        <h2 class="text-xl font-semibold text-center">Iniciar Sesión / Registro</h2>
+        <input id="email" type="email" placeholder="Correo electrónico" class="border p-2 w-full rounded mt-2">
+        <input id="password" type="password" placeholder="Contraseña" class="border p-2 w-full rounded mt-2">
+        <button id="login-btn" class="bg-blue-500 text-white px-4 py-2 rounded mt-4 w-full">Iniciar Sesión</button>
+        <button id="register-btn" class="bg-green-500 text-white px-4 py-2 rounded mt-4 w-full">Registrarse</button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDCU-UPTS_3xOrtARueK53RCF7-09YTxRg",
+            authDomain: "ticketstop-9cbe5.firebaseapp.com",
+            projectId: "ticketstop-9cbe5",
+            storageBucket: "ticketstop-9cbe5.firebasestorage.app",
+            messagingSenderId: "233142470845",
+            appId: "1:233142470845:web:f5486f20dc1f56859ccfd4"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth();
+        const db = getFirestore(app);
+
+        document.getElementById('login-btn').addEventListener('click', async () => {
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            if (!email || !password) {
+                alert("Por favor, ingresa un correo y una contraseña.");
+                return;
+            }
+
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                console.log("Inicio de sesión exitoso:", userCredential);
+                window.location.href = "dashboard.html";
+            } catch (error) {
+                console.error("Error en el inicio de sesión:", error);
+                alert("Error al iniciar sesión: " + error.message);
+            }
+        });
+
+        document.getElementById('register-btn').addEventListener('click', async () => {
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            if (!email || !password) {
+                alert("Por favor, ingresa un correo y una contraseña.");
+                return;
+            }
+
+            if (password.length < 6) {
+                alert("La contraseña debe tener al menos 6 caracteres.");
+                return;
+            }
+
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                await setDoc(doc(db, "users", userCredential.user.uid), {
+                    email: email,
+                    role: "user",
+                    createdAt: new Date()
+                });
+                alert("Cuenta creada con éxito. Ahora puedes iniciar sesión.");
+            } catch (error) {
+                console.error("Error en el registro:", error);
+                alert("Error en el registro: " + error.message);
+            }
+        });
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                window.location.href = "dashboard.html";
+            }
+        });
+    </script>
+</body>
+</html>

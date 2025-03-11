@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - TicketStop</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-6">
+        <h1 class="text-3xl font-bold text-center text-blue-600">Panel de Tickets</h1>
+        <div class="flex justify-between mt-6">
+            <button id="logout-btn" class="bg-red-500 text-white px-4 py-2 rounded">Cerrar Sesión</button>
+            <button id="new-ticket-btn" class="bg-green-500 text-white px-4 py-2 rounded">Nuevo Ticket</button>
+        </div>
+        
+        <div id="ticket-list" class="mt-6"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+        import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDCU-UPTS_3xOrtARueK53RCF7-09YTxRg",
+            authDomain: "ticketstop-9cbe5.firebaseapp.com",
+            projectId: "ticketstop-9cbe5",
+            storageBucket: "ticketstop-9cbe5.firebasestorage.app",
+            messagingSenderId: "233142470845",
+            appId: "1:233142470845:web:f5486f20dc1f56859ccfd4"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth();
+        const db = getFirestore(app);
+
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            await signOut(auth);
+            window.location.href = "index.html";
+        });
+
+        document.getElementById('new-ticket-btn').addEventListener('click', () => {
+            window.location.href = "new_ticket.html";
+        });
+
+        async function loadTickets() {
+            const querySnapshot = await getDocs(collection(db, 'tickets'));
+            let html = '';
+            querySnapshot.forEach(doc => {
+                const ticket = doc.data();
+                html += `<div class='bg-white p-4 mt-2 border rounded'>
+                    <strong>${ticket.category}</strong> - ${ticket.priority}<br>
+                    ${ticket.description}
+                </div>`;
+            });
+            document.getElementById('ticket-list').innerHTML = html;
+        }
+        
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                window.location.href = "index.html";
+            } else {
+                loadTickets();
+            }
+        });
+    </script>
+</body>
+</html>

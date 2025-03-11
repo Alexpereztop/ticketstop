@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuevo Ticket - TicketStop</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-6">
+        <h1 class="text-3xl font-bold text-center text-blue-600">Crear Nuevo Ticket</h1>
+        <div class="mt-6">
+            <label class="block text-gray-700">Categoría</label>
+            <select id="category" class="border p-2 w-full rounded">
+                <option value="Soporte Técnico">Soporte Técnico</option>
+                <option value="Facturación">Facturación</option>
+                <option value="Cuenta">Cuenta</option>
+                <option value="Otro">Otro</option>
+            </select>
+
+            <label class="block text-gray-700 mt-4">Prioridad</label>
+            <select id="priority" class="border p-2 w-full rounded">
+                <option value="Baja">Baja</option>
+                <option value="Media">Media</option>
+                <option value="Alta">Alta</option>
+            </select>
+
+            <label class="block text-gray-700 mt-4">Descripción</label>
+            <textarea id="description" class="border p-2 w-full rounded" placeholder="Describe tu problema"></textarea>
+
+            <button id="submit-ticket" class="bg-green-500 text-white px-4 py-2 rounded mt-4 w-full">Enviar Ticket</button>
+            <button id="cancel-btn" class="bg-gray-500 text-white px-4 py-2 rounded mt-4 w-full">Cancelar</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, Timestamp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDCU-UPTS_3xOrtARueK53RCF7-09YTxRg",
+            authDomain: "ticketstop-9cbe5.firebaseapp.com",
+            projectId: "ticketstop-9cbe5",
+            storageBucket: "ticketstop-9cbe5.firebasestorage.app",
+            messagingSenderId: "233142470845",
+            appId: "1:233142470845:web:f5486f20dc1f56859ccfd4"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth();
+        const db = getFirestore(app);
+
+        document.getElementById('cancel-btn').addEventListener('click', () => {
+            window.location.href = "dashboard.html";
+        });
+
+        document.getElementById('submit-ticket').addEventListener('click', async () => {
+            const category = document.getElementById('category').value;
+            const priority = document.getElementById('priority').value;
+            const description = document.getElementById('description').value;
+
+            if (!description.trim()) {
+                alert("Por favor, ingresa una descripción del problema.");
+                return;
+            }
+
+            const user = auth.currentUser;
+            if (!user) {
+                alert("Debes estar autenticado para enviar un ticket.");
+                return;
+            }
+
+            await addDoc(collection(db, 'tickets'), {
+                userID: user.uid,
+                name: user.displayName,
+                email: user.email,
+                category,
+                priority,
+                description,
+                status: "Abierto",
+                createdAt: Timestamp.now()
+            });
+
+            alert("Ticket enviado exitosamente.");
+            window.location.href = "dashboard.html";
+        });
+
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                window.location.href = "index.html";
+            }
+        });
+    </script>
+</body>
+</html>
